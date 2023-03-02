@@ -1,9 +1,0 @@
-class VirtualTerminal {
-
-    constructor() {
-        
-    }
-
-    
-
-}

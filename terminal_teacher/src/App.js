@@ -2,13 +2,18 @@ import './App.css';
 import React from 'react'
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
+import FileDescriptor from "./FileDescriptor.js"
+import File from "./File.js"
+import Directory from "./Directory.js"
+import VirtualFileSystem from "./VirtualFileSystem.js";
 
 function App() {
 
   const [currentState, setState] = React.useState(
     {terminalContents: "", 
     commandList: [], 
-    selectedCommand: 0
+    selectedCommand: 0,
+    fileSystem: new VirtualFileSystem()
   });
 
   const handleTerminalInput = (event) => {
@@ -28,10 +33,17 @@ function App() {
       const commandList = currentState.commandList;
       commandList.push(command);
 
+      console.log(currentState.fileSystem)
+
+      if(command === "mkdir testDir") {
+        currentState.fileSystem.mkdir("testdir");
+      }
+
       setState(
         {terminalContents: terminalContents, 
           commandList: commandList,
-          selectedCommand: commandList.length
+          selectedCommand: commandList.length,
+          fileSystem: currentState.fileSystem
         })
 
       event.target.value = "";
