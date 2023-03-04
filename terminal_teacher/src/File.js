@@ -11,6 +11,10 @@ class File extends FileDescriptor {
         return this._extension;
     }
 
+    get completeName() {
+        return this._name + "." + this._extension;
+    }
+
     /**
      * @param {string} newContents
      * 

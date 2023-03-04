@@ -25,10 +25,18 @@ class Directory extends FileDescriptor {
 
     addDirectory(directory) {
         if(this.getDirectory(directory.name)) {
-            throw new Error(`Directory: ${directory.name} already exists in ${this.name}`)
+            throw new Error(`Directory: ${directory.name} already exists in ${this.name}`);
         }
 
-        this.contents.push(directory)
+        this.contents.push(directory);
+    }
+
+    addFile(file) {
+        if(this.getFile(file.completeName)) {
+            throw new Error(`File: ${file.completeName} already exists in ${this.name}`);
+        }
+
+        this.contents.push(file);
     }
 
     listContents() {
