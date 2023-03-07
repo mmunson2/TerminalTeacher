@@ -44,10 +44,12 @@ class Directory extends FileDescriptor {
 
         for(let fd of this.contents) {
             if(fd.isDirectory) {
+                contents += " - ";
                 contents += fd.name;
                 contents += "\n";
             }
             else {
+                contents += " - ";
                 contents += fd.name;
                 contents += ".";
                 contents += fd.extension;

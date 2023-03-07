@@ -1,8 +1,9 @@
 class ProcessResult {
 
     constructor(success, details) {
-        this.success = success;
-        this.details = details;
+        
+        this.success = success ? success : false;
+        this.details = details ? details : "";
     }
 
     get success() {
@@ -14,6 +15,7 @@ class ProcessResult {
     }
 
     set success(newStatus) {
+  
         if(typeof(newStatus) !== "boolean") {
             throw new TypeError("Success value must be a boolean");
         }

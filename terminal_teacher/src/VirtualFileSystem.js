@@ -44,9 +44,9 @@ class VirtualFileSystem {
         if(args && typeof(args) === "string" && args === "-l") {
             showSize = true;
         }
-        else {
+        else if (args) {
             result.success = false;
-            result.details `ls: invalid option ${args}`
+            result.details = `ls: invalid option ${args}`
 
             return result;
         }
@@ -92,7 +92,7 @@ class VirtualFileSystem {
         }
         else {
             result.success = false;
-            result.details `touch: invalid filename ${filename}`
+            result.details =  `touch: invalid filename ${filename}`
 
             return result;
         }
@@ -102,7 +102,14 @@ class VirtualFileSystem {
         const result = new ProcessResult();
 
         if(typeof(path) === "string") {
-            if(path.contains("/")) {
+            if(path === "/") {
+                this.currentDirectory = this.fileSystem;
+
+                result.success = true;
+
+                return result;
+            }
+            if(path.includes("/")) {
                 const separatedPath = path.split("/");
 
                 let searchDirectory;
@@ -115,10 +122,15 @@ class VirtualFileSystem {
                     searchDirectory = this.currentDirectory
                 }
 
+                console.log(searchDirectory);
+                console.log(separatedPath);
+
                 for(let i = 0; i < separatedPath.length; i++) {
                     const nextDir = searchDirectory.getDirectory(separatedPath[i])
 
-                    if(!nextDir.isDirectory) {
+                    console.log(nextDir);
+
+                    if(!nextDir) {
                         result.success = false;
                         result.details = `${path}: Not a directory`
 
@@ -137,6 +149,8 @@ class VirtualFileSystem {
                 }
             }
             else { // TODO: Simplify
+                let searchDirectory = this.currentDirectory;
+
                 const nextDir = searchDirectory.getDirectory(path);
 
                 if(!nextDir.isDirectory) {
