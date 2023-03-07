@@ -3,88 +3,12 @@ import React from 'react'
 import TextField from '@mui/material/TextField';
 import VirtualFileSystem from "./terminal/VirtualFileSystem.js";
 import Instructor from "./instructor/Instructor.js"
-import ProcessResult from './terminal/ProcessResult';
+import parseCommand from './terminal/CommandParser';
 import title from './assets/title_cropped.jpg';
 import textWindowImage from "./assets/text_box.png";
 
 const username = "bonzi$ "
 const terminalLineCount = 10
-
-function parseCommand(nextLine, fileSystem, instructor) {
-  // Remove the username from the input line
-  nextLine = nextLine.slice(username.length, nextLine.length)
-
-  // Trim whitespace, then split by single whitespace
-  const commandComponents = nextLine.trim().split(" ");
-
-  if(commandComponents.length < 1 || nextLine === "") {
-    instructor.parseCommand("", new ProcessResult())
-    return "";
-  }
-
-  const command = commandComponents[0];
-
-  if(command === "mkdir") {
-    if(commandComponents.length < 2) {
-      instructor.parseCommand(command, new ProcessResult())
-      return "usage: mkdir directory_name"
-    }
-    else {
-      const result = fileSystem.mkdir(commandComponents[1]);
-
-      instructor.parseCommand(command, result);
-      return result.details;
-    }
-  }
-  else if(command === "ls") {
-    if(commandComponents.length > 1) {
-      const result = fileSystem.ls(commandComponents[1]);
-
-      instructor.parseCommand(command, result);
-
-      return result.details;
-    }
-    else {
-      const result = fileSystem.ls()
-
-      instructor.parseCommand(command, result);
-
-      return result.details;
-    }
-  }
-  else if(command === "touch") {
-    if(commandComponents.length < 2) {
-      instructor.parseCommand(command, new ProcessResult())
-      return "usage: touch file_name"
-    }
-    else {
-      const result = fileSystem.touch(commandComponents[1]);
-
-      instructor.parseCommand(command, result);
-
-      return result.details;
-    }
-  }
-  else if(command === "cd") {
-    if(commandComponents.length < 2) {
-      instructor.parseCommand(command, new ProcessResult())
-      return "usage: cd directory_path"
-    }
-    else {
-      const result = fileSystem.cd(commandComponents[1]);
-
-      instructor.parseCommand(command, result);
-
-      return result.details;
-    }
-  }
-  else {
-    instructor.parseCommand(command, new ProcessResult());
-
-    return `command not found: ${command}`;
-  }
-
-}
 
 function trimTerminalContents(terminalContents) {
   let lineCount = (terminalContents.match(/\n/g) || []).length;
@@ -96,6 +20,40 @@ function trimTerminalContents(terminalContents) {
   }
 
   return terminalContents;
+}
+
+function updateTerminalContents(currentState, command) {
+
+  // Add the command executed by the user to the terminal
+  let terminalContents = currentState.terminalContents;
+  terminalContents += "\n";
+  terminalContents += command;
+
+  // Get the string output from the command parser
+  const output = parseCommand(command, currentState.fileSystem, currentState.instructor, username);
+
+  // If there's output, add it to the terminal
+  if(output) {
+    terminalContents += "\n"
+  }
+  terminalContents += output;
+
+  // Check if we've exceeded our terminal line limit. Trim if so
+  terminalContents = trimTerminalContents(terminalContents);
+
+  currentState.terminalContents = terminalContents;
+
+  return currentState;
+}
+
+function updateCommandList(currentState, command) {
+  const commandList = currentState.commandList;
+  commandList.push(command);
+
+  currentState.commandList = commandList;
+  currentState.selectedCommand = commandList.length;
+
+  return currentState;
 }
 
 function App() {
@@ -117,31 +75,18 @@ function App() {
       event.preventDefault();
       
       const command = event.target.value;
+      let newState = currentState;
 
-      let terminalContents = currentState.terminalContents;
-      terminalContents += "\n";
-      terminalContents += command;
+      newState = updateTerminalContents(newState, command);
+      newState = updateCommandList(newState, command);
 
-      const commandList = currentState.commandList;
-      commandList.push(command);
-
-      const output = parseCommand(command, currentState.fileSystem, currentState.instructor);
-
-      if(output) {
-        terminalContents += "\n"
-      }
-      terminalContents += output;
-
-
-      terminalContents = trimTerminalContents(terminalContents);
-
-      setState(
-        {terminalContents: terminalContents, 
-          commandList: commandList,
-          selectedCommand: commandList.length,
-          fileSystem: currentState.fileSystem,
-          instructor: currentState.instructor
-        })
+      setState({
+        terminalContents: newState.terminalContents, 
+        commandList: newState.commandList, 
+        selectedCommand: newState.selectedCommand,
+        fileSystem: newState.fileSystem,
+        instructor: newState.instructor
+      });
 
       event.target.value = username;
     }
@@ -167,6 +112,7 @@ function App() {
         setState(newState);
       }
     }
+    // Don't allow the user to delete the user display
     else if (key === "Backspace") {
       if(event.target.value.length <= username.length) {
         event.preventDefault()
