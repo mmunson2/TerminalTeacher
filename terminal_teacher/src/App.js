@@ -1,11 +1,11 @@
 import './App.css';
 import React from 'react'
 import TextField from '@mui/material/TextField';
-import VirtualFileSystem from "./VirtualFileSystem.js";
-import Instructor from "./Instructor.js"
-import ProcessResult from './ProcessResult';
-import title from './Assets/title_cropped.jpg';
-import textWindowImage from "./Assets/text_box.png";
+import VirtualFileSystem from "./terminal/VirtualFileSystem.js";
+import Instructor from "./instructor/Instructor.js"
+import ProcessResult from './terminal/ProcessResult';
+import title from './assets/title_cropped.jpg';
+import textWindowImage from "./assets/text_box.png";
 
 const username = "bonzi$ "
 const terminalLineCount = 10

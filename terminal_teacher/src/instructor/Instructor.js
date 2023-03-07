@@ -1,7 +1,7 @@
-import standard from "./Assets/Default_Transparent.png"
-import approving from "./Assets/Looking_Good_Transparent.png"
-import explaining from "./Assets/Info_Transparent.png"
-import apologizing from "./Assets/Sorry_Transparent.png"
+import standard from "../assets/Default_Transparent.png"
+import approving from "../assets/Looking_Good_Transparent.png"
+import explaining from "../assets/Info_Transparent.png"
+import apologizing from "../assets/Sorry_Transparent.png"
 
 const instructorPoses = {
     standard: standard,
