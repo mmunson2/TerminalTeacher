@@ -1,15 +1,24 @@
 import './App.css';
 import React from 'react'
-import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 import VirtualFileSystem from "./VirtualFileSystem.js";
 import Instructor from "./Instructor.js"
 import ProcessResult from './ProcessResult';
+import title from './Assets/title_cropped.jpg';
+import textWindowImage from "./Assets/text_box.png";
+
+const username = "bonzi$ "
+const terminalLineCount = 10
 
 function parseCommand(nextLine, fileSystem, instructor) {
-  const commandComponents = nextLine.split(" ");
+  // Remove the username from the input line
+  nextLine = nextLine.slice(username.length, nextLine.length)
 
-  if(commandComponents.length < 1) {
+  // Trim whitespace, then split by single whitespace
+  const commandComponents = nextLine.trim().split(" ");
+
+  if(commandComponents.length < 1 || nextLine === "") {
+    instructor.parseCommand("", new ProcessResult())
     return "";
   }
 
@@ -77,6 +86,17 @@ function parseCommand(nextLine, fileSystem, instructor) {
 
 }
 
+function trimTerminalContents(terminalContents) {
+  let lineCount = (terminalContents.match(/\n/g) || []).length;
+
+  while(lineCount > terminalLineCount) {
+    terminalContents = terminalContents.slice(terminalContents.indexOf("\n") + 1, terminalContents.length)
+
+    lineCount = (terminalContents.match(/\n/g) || []).length;
+  }
+
+  return terminalContents;
+}
 
 function App() {
 
@@ -112,7 +132,8 @@ function App() {
       }
       terminalContents += output;
 
-      console.log(currentState.fileSystem)
+
+      terminalContents = trimTerminalContents(terminalContents);
 
       setState(
         {terminalContents: terminalContents, 
@@ -122,7 +143,7 @@ function App() {
           instructor: currentState.instructor
         })
 
-      event.target.value = "";
+      event.target.value = username;
     }
     // Arrow keys get previous/next commands in list
     else if(key === "ArrowUp" || key === "ArrowDown") {
@@ -146,48 +167,51 @@ function App() {
         setState(newState);
       }
     }
+    else if (key === "Backspace") {
+      if(event.target.value.length <= username.length) {
+        event.preventDefault()
+        event.target.value = username;
+      }
+    }
   }
-
-  const instructorStyle = {
-    width: 100,
-    height: 100
-  }
-
-  console.log(instructorStyle.background)
 
   return <>
-  <h1>Terminal Teacher</h1>
-  <p>A place to practice the Unix terminal from the web</p>
-  <div style={instructorStyle}></div>
-  <img style={instructorStyle} src={currentState.instructor.pose} alt="Bonzi buddy"></img>
-  <p>Instructor says: {currentState.instructor.suggestion}</p>
-  <Box
-    component="form"
-    sx={{
-      width: 1080,
-      height: 800,
-      backgroundColor: 'gray',
-      backgroundImage: 'terminal_teacher/src/Assets/code_background.jpg',
-    }}
-    noValidate
-    autoComplete="off"
-  >
-    <div>
-      <TextField
-        id="terminal-output"
-        multiline
-        maxRows={10}
-        defaultValue={currentState.terminalContents}
-        className="terminal-output"
-      />
-      <TextField 
-      id="terminal-input" 
-      variant="filled"
-      onKeyDown={handleTerminalInput}
-      className="terminal-input" />
-      
-    </div>
-  </Box></>
+  <img id="title-img" src={title} alt="Terminal Teacher"></img>
+  <div className="about-text">
+  <h1>About</h1>
+  <p>Terminal Teacher is a Unix-like environment that runs in a web browser. While an operating system can sometimes be sparse and cold in its error messages, Terminal Teacher provides a cheerful mascot to provide additional details.</p>
+  <h3>Some commands to try are</h3>
+  <ul>
+    <li>mkdir</li>
+    <li>touch</li>
+    <li>ls</li>
+    <li>cd</li>
+  </ul>
+  </div>
+
+  <div id="instructor">
+  <img src={textWindowImage} alt="window" className="instructor-window"></img>
+  <img className="instructor-image" src={currentState.instructor.pose} alt="Bonzi buddy"></img>
+  <span className="instructor-hint-box">Bonzi says: {currentState.instructor.suggestion}</span>
+  </div>
+  <div id="terminal">
+    <TextField
+      id="terminal-output"
+      className="terminal-out"
+      multiline
+      fullWidth
+      maxRows={15}
+      defaultValue={currentState.terminalContents}
+      onKeyDown={(event) => {event.preventDefault();}}
+    />
+    <TextField 
+    id="terminal-input"
+    className="terminal-in"
+    variant="filled"
+    defaultValue={username}
+    onKeyDown={handleTerminalInput}
+    />
+  </div></>
 }
 
 export default App;

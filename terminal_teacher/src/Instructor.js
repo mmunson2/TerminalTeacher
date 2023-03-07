@@ -42,6 +42,10 @@ class Instructor {
             this.suggestion = "Looking good!"
             this.pose = instructorPoses.approving;
         }
+        else if(command === "" ) {
+            this.suggestion = "";
+            this.pose = instructorPoses.standard;
+        }
         else if(command === "mkdir") {
             this.suggestion = "The mkdir command is used to create a directory. You can name a directory anything you'd like! Try \"mkdir my_directory\""
             this.pose = instructorPoses.explaining;
