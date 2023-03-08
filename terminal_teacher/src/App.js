@@ -3,7 +3,6 @@ import React from 'react'
 import TextField from '@mui/material/TextField';
 import VirtualFileSystem from "./terminal/VirtualFileSystem.js";
 import Instructor from "./instructor/Instructor.js"
-import parseCommand from './terminal/CommandParser';
 import title from './assets/title_cropped.jpg';
 import textWindowImage from "./assets/text_box.png";
 
@@ -22,21 +21,19 @@ function trimTerminalContents(terminalContents) {
   return terminalContents;
 }
 
-function updateTerminalContents(currentState, command) {
+function updateTerminalContents(currentState, command, result) {
 
   // Add the command executed by the user to the terminal
   let terminalContents = currentState.terminalContents;
   terminalContents += "\n";
   terminalContents += command;
-
-  // Get the string output from the command parser
-  const output = parseCommand(command, currentState.fileSystem, currentState.instructor, username);
-
+  
   // If there's output, add it to the terminal
-  if(output) {
+  if(result.details) {
     terminalContents += "\n"
+
+    terminalContents += result.details;
   }
-  terminalContents += output;
 
   // Check if we've exceeded our terminal line limit. Trim if so
   terminalContents = trimTerminalContents(terminalContents);
@@ -77,8 +74,12 @@ function App() {
       const command = event.target.value;
       let newState = currentState;
 
-      newState = updateTerminalContents(newState, command);
+      const commandWithoutUser = command.slice(username.length, command.length)
+      const result = currentState.fileSystem.parseCommand(commandWithoutUser);
+
+      newState = updateTerminalContents(newState, command, result);
       newState = updateCommandList(newState, command);
+      newState.instructor.parseResult(result)
 
       setState({
         terminalContents: newState.terminalContents, 
@@ -132,6 +133,7 @@ function App() {
     <li>touch</li>
     <li>ls</li>
     <li>cd</li>
+    <li>cat</li>
   </ul>
   </div>
 

@@ -15,6 +15,10 @@ class File extends FileDescriptor {
         return this._name + "." + this._extension;
     }
 
+    get contents() {
+        return this._contents;
+    }
+
     /**
      * @param {string} newContents
      * 
@@ -47,7 +51,7 @@ class File extends FileDescriptor {
     }
 
     getSize() {
-        return this.contents.length;
+        return this.contents ? this.contents.length : 0
     }
 }
 

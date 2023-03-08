@@ -2,6 +2,7 @@ import standard from "../assets/Default_Transparent.png"
 import approving from "../assets/Looking_Good_Transparent.png"
 import explaining from "../assets/Info_Transparent.png"
 import apologizing from "../assets/Sorry_Transparent.png"
+import { ResultCodes } from "../terminal/ProcessResult"
 
 const instructorPoses = {
     standard: standard,
@@ -10,10 +11,19 @@ const instructorPoses = {
     apologizing: apologizing
 }
 
+const approvalMessages = [
+    "Looking good!",
+    "Nice one!",
+    "Sweet!",
+    "You're a pro!",
+    "Amazing!",
+    "Excellent!"
+]
+
 class Instructor {
 
     constructor() {
-        this.suggestion = "Try making a file with \"touch newFile.txt\""
+        this.suggestion = "Try viewing the current directory with \"ls\""
         this.pose = instructorPoses.standard;
     }
 
@@ -37,9 +47,32 @@ class Instructor {
         this._pose = pose;
     }
 
-    parseCommand(command, result) {
-        if(result.success) {
-            this.suggestion = "Looking good!"
+    parseResult(result) {
+        const code = result.resultCode;
+        const command = result.processInput.command;
+
+        if(code === ResultCodes.SUCCESS) {
+
+            const randomIndex = Math.floor(Math.random() * approvalMessages.length)
+
+            this.suggestion = approvalMessages[randomIndex]
+
+            if(command === "mkdir") {
+                this.suggestion += " If you'd like to view the directory you just made, try using \"ls\"."
+            }
+            else if(command === "ls" && result.processInput.arguments.length > 0 && result.processInput.arguments[0] === "-l") {
+                this.suggestion += " Now maybe we can check out some of these directories with \"cd\"..."
+            }
+            else if(command === "ls") {
+                this.suggestion += " You can try this command with a \"-l\" option to see the sizes of files and directories."
+            }
+            else if(command === "touch") {
+                this.suggestion += " If you'd like to view the directory you just made, try using \"ls\"."
+            }
+            else if(command === "cd") {
+                this.suggestion += " Have you tried executing a previous command with the up arrow?"
+            }
+
             this.pose = instructorPoses.approving;
         }
         else if(command === "" ) {
@@ -55,15 +88,23 @@ class Instructor {
             this.pose = instructorPoses.explaining;
         }
         else if(command === "touch") {
-            this.suggestion = "The touch command creates a blank file. You can name a file anything you'd like, but this terminal requires an extension to be added like \".txt\". Try \"touch my_file\""
+            this.suggestion = "The touch command creates a blank file. You can name a file anything you'd like, but this terminal requires an extension to be added like \".txt\". Try \"touch my_file.txt\""
             this.pose = instructorPoses.explaining;
         }
         else if(command === "cd") {
-            this.suggestion = "The cd command changes the current directory. You might need to create a directory with mkdir first! Enter the name of the directory you want to change to as an argument like \"cd my_directory\". To go back to the root directory, use \"cd /\""
+            this.suggestion = "The cd command changes the current directory. Enter the name of the directory you want to change to as an argument like \"cd my_directory\". To go back to the root directory, use \"cd /\""
             this.pose = instructorPoses.explaining;
         }
-        else {
+        else if(command === "cat") {
+            this.suggestion = "The cat command displays the contents of a file on the terminal. Try navigating to the dev folder and running \"cat main.java\"";
+            this.pose = instructorPoses.explaining;
+        }
+        else if (code === ResultCodes.NOT_FOUND) {
             this.suggestion = "Not all Unix commands are implemented, sorry :)"
+            this.pose = instructorPoses.apologizing;
+        }
+        else {
+            this.suggestion = "hmm, I don't know this one but I should... Ask the devs maybe?"
             this.pose = instructorPoses.apologizing;
         }
     }

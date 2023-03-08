@@ -84,14 +84,10 @@ class Directory extends FileDescriptor {
     }
 
     getFile(filename) {
-        let splitFile = filename.split(".");
-
-        if(splitFile.length !== 2) {
-            throw new Error("filename should have a name and extension separated by a period");
-        }
 
         for(let fd of this.contents) {
-            if(!fd.isDirectory && fd.name === filename) {
+            console.log(fd);
+            if(!fd.isDirectory && fd.completeName === filename) {
                 return fd;
             }
         }

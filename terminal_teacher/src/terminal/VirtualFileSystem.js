@@ -1,6 +1,7 @@
 import Directory from "./Directory";
 import File from "./File"
-import ProcessResult from "./ProcessResult";
+import { ProcessResult, ResultCodes } from "./ProcessResult";
+import ProcessInput from "./ProcessInput";
 
 class VirtualFileSystem {
 
@@ -14,65 +15,122 @@ class VirtualFileSystem {
         }
 
         this.currentDirectory = this.fileSystem;
+
+        this.createDemoFileSystem();
     }
 
-    mkdir(dirName) {
-        const newDir = new Directory(dirName, []);
+    createDemoFileSystem() {
+        const codeFile1 = new File("demo", "py", `
+        if __name__ == "__main__":
+            print("Hello!")
+        `);
+        const codeFile2 = new File("main", "java", `
+        public static void main(string[] args)
+        {
+            System.out.println("Hi there");
+        }
+        `)
+        const groceryList = new File("groceries", "txt", `
+        - bananas
+        - bananas
+        - bananas`);
 
-        const result = new ProcessResult()
+        const projectFolder = new Directory("final_project", [codeFile1]);
+        const devFolder = new Directory("dev", [projectFolder, codeFile2]);
+        const usrFolder = new Directory("usr", [groceryList]);
+        const etcFolder = new Directory("etc", [])
+
+        this.currentDirectory.addDirectory(devFolder);
+        this.currentDirectory.addDirectory(usrFolder);
+        this.currentDirectory.addDirectory(etcFolder);
+    }
+
+    parseCommand(nextLine) {
+        const input = new ProcessInput(nextLine);
+
+        if(input.command === "") {
+            return new ProcessResult(input, ResultCodes.SUCCESS, "");
+        }
+        else if(input.command === "mkdir") {
+            return this.mkdir(input);
+        }
+        else if(input.command === "ls") {
+            return this.ls(input);
+        }
+        else if(input.command === "touch") {
+            return this.touch(input);
+        }
+        else if(input.command === "cd") {
+            return this.cd(input);
+        }
+        else if(input.command === "cat") {
+            return this.cat(input);
+        }
+        else {
+            return new ProcessResult(input, ResultCodes.NOT_FOUND, `command not found: ${input.command}`);
+        }
+    }
+
+    mkdir(input) {
+        
+        if(!input.arguments || input.arguments.length < 1) {
+            const details = "usage: mkdir directory_name";
+
+            return new ProcessResult(input, ResultCodes.ERROR, details);
+        }
+
+        const dirName = input.arguments[0];
+
+        const newDir = new Directory(dirName, []);
 
         try {
             this.currentDirectory.addDirectory(newDir);
 
-            result.success = true;
-
-            return result;
+            return new ProcessResult(input, ResultCodes.SUCCESS, "");
         }
         catch(e) {
-
-            result.success = false;
-            result.details = e.message;
-
-            return result;
+            return new ProcessResult(input, ResultCodes.ERROR, e.message)
         }
     }
 
-    ls(args) {
-        const result = new ProcessResult();
-        let showSize = false;
+    ls(input) {
 
-        if(args && typeof(args) === "string" && args === "-l") {
+        let showSize = false;
+        let details = ""
+
+        if(input.arguments && input.arguments[0] === "-l") {
             showSize = true;
         }
-        else if (args) {
-            result.success = false;
-            result.details = `ls: invalid option ${args}`
+        else if (input.arguments && input.arguments.length > 0) {
+            details = `ls: invalid option ${input.arguments[0]}`;
 
-            return result;
+            return new ProcessResult(input, ResultCodes.ERROR, details);
         }
 
         try {
             if(showSize) {
-                result.details = this.currentDirectory.listContentsWithSize()
+                details = this.currentDirectory.listContentsWithSize()
             }
             else {
-                result.details = this.currentDirectory.listContents()
+                details = this.currentDirectory.listContents()
             }
-            
-            result.success = true;
 
-            return result;
+            return new ProcessResult(input, ResultCodes.SUCCESS, details);
         }
         catch(e) {
-            result.details = e.message;
-            result.success = false;
-
-            return result;
+            return new ProcessResult(input, ResultCodes.ERROR, e.message)
         }
     }
 
-    touch(filename) {
-        const result = new ProcessResult();
+    touch(input) {
+
+        if(!input.arguments || input.arguments.length < 1) {
+            const details = "usage: touch file_name";
+
+            return new ProcessResult(input, ResultCodes.ERROR, details);
+        }
+
+        const filename = input.arguments[0];
 
         if(typeof(filename) === "string" && filename.split(".").length === 2) {
             let fileComponents = filename.split(".");
@@ -80,101 +138,121 @@ class VirtualFileSystem {
             try {
                 this.currentDirectory.addFile(new File(fileComponents[0], fileComponents[1], ""));
 
-                result.success = true;
-                return result;
+                return new ProcessResult(input, ResultCodes.SUCCESS, "")
             }
             catch(e) {
-                result.details = e.message;
-                result.success = false;
-
-                return result;
+                return new ProcessResult(input, ResultCodes.ERROR, e.message);
             }
         }
         else {
-            result.success = false;
-            result.details =  `touch: invalid filename ${filename}`
+            const details =  `touch: invalid filename ${filename}`
 
-            return result;
+            return new ProcessResult(input, ResultCodes.ERROR, details)
         }
     }
 
-    cd(path) {
-        const result = new ProcessResult();
+    cd(input) {
+        if(!input.arguments || input.arguments.length < 1) {
+            const details = "usage: cd directory_path";
 
-        if(typeof(path) === "string") {
-            if(path === "/") {
-                this.currentDirectory = this.fileSystem;
+            return new ProcessResult(input, ResultCodes.ERROR, details);
+        }
 
-                result.success = true;
+        const path = input.arguments[0];
 
-                return result;
+        if(path === "/") {
+            this.currentDirectory = this.fileSystem;
+
+            return new ProcessResult(input, ResultCodes.SUCCESS, "")
+        }
+
+        if(path.includes("/")) {
+            const separatedPath = path.split("/");
+            
+            if(separatedPath[0] === "") {
+                // Get rid of empty first element
+                separatedPath.shift()
             }
-            if(path.includes("/")) {
-                const separatedPath = path.split("/");
 
-                let searchDirectory;
+            let searchDirectory;
 
-                // Starting a path with / searches for absolute paths
-                if(path[0] === "/") {
-                    searchDirectory = this.fileSystem;
-                }
-                else { // else search relative
-                    searchDirectory = this.currentDirectory
-                }
-
-                console.log(searchDirectory);
-                console.log(separatedPath);
-
-                for(let i = 0; i < separatedPath.length; i++) {
-                    const nextDir = searchDirectory.getDirectory(separatedPath[i])
-
-                    console.log(nextDir);
-
-                    if(!nextDir) {
-                        result.success = false;
-                        result.details = `${path}: Not a directory`
-
-                        return result;
-                    }
-                    else if(i === separatedPath.length - 1) {
-                        this.currentDirectory = nextDir;
-
-                        result.success = true;
-
-                        return result;
-                    }
-                    else { // Loop again, searching the current directory
-                        searchDirectory = nextDir;
-                    }
-                }
+            // Starting a path with / searches for absolute paths
+            if(path[0] === "/") {
+                searchDirectory = this.fileSystem;
             }
-            else { // TODO: Simplify
-                let searchDirectory = this.currentDirectory;
+            else { // else search relative
+                searchDirectory = this.currentDirectory
+            }
+            
+            for(let i = 0; i < separatedPath.length; i++) {
+                const nextDir = searchDirectory.getDirectory(separatedPath[i])
 
-                const nextDir = searchDirectory.getDirectory(path);
+                if(!nextDir) {
+                    const details = `${path}: Not a directory`
 
-                if(!nextDir.isDirectory) {
-                    result.success = false;
-                    result.details = `${path}: Not a directory`
-
-                    return result;
+                    return new ProcessResult(input, ResultCodes.ERROR, details)
                 }
-                else {
+                else if(i === separatedPath.length - 1) {
                     this.currentDirectory = nextDir;
 
-                        result.success = true;
-
-                        return result;
+                    return new ProcessResult(input, ResultCodes.SUCCESS, "")
+                }
+                else { // Loop again, searching the current directory
+                    searchDirectory = nextDir;
                 }
             }
         }
-        else {
-            result.success = false;
-            result.details = `cd: invalid path ${path}`
+        else { // TODO: Simplify
+            let searchDirectory = this.currentDirectory;
 
-            return result;
+            const nextDir = searchDirectory.getDirectory(path);
+
+            if(!nextDir.isDirectory) {
+                const details = `${path}: Not a directory`
+
+                return new ProcessResult(input, ResultCodes.ERROR, details)
+            }
+            else {
+                this.currentDirectory = nextDir;
+
+                return new ProcessResult(input, ResultCodes.SUCCESS, "")
+            }
         }
     }
+
+    cat(input) {
+        if(!input.arguments || input.arguments.length < 1) {
+            const details = "usage: cat file_name";
+
+            return new ProcessResult(input, ResultCodes.ERROR, details);
+        }
+
+        const fileName = input.arguments[0];
+
+        if(this.currentDirectory.getDirectory(fileName)) {
+            const details = `cat: ${fileName} is a directory`
+
+            return new ProcessResult(input, ResultCodes.ERROR, details);
+        }
+
+        try {
+            const file = this.currentDirectory.getFile(fileName);
+
+            if(file) {
+                return new ProcessResult(input, ResultCodes.SUCCESS, file.contents)
+            }
+            else {
+                const details = `cat: ${fileName}: no such file or directory`
+    
+                return new ProcessResult(input, ResultCodes.ERROR, details);
+            }
+        }
+        catch(e) {
+            return new ProcessResult(input, ResultCodes.ERROR, e.message);
+        }
+    }
+
+    
 
 }
 
