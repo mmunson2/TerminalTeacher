@@ -72,6 +72,9 @@ class Instructor {
             else if(command === "cd") {
                 this.suggestion += " Have you tried executing a previous command with the up arrow?"
             }
+            else if(command === "help") {
+                this.suggestion += " Enter any of these commands into the terminal and I'll tell you more!"
+            }
 
             this.pose = instructorPoses.approving;
         }

@@ -3,6 +3,13 @@ import File from "./File"
 import { ProcessResult, ResultCodes } from "./ProcessResult";
 import ProcessInput from "./ProcessInput";
 
+const helpText = `mkdir directory_name
+touch file_name
+ls [-l]
+cd path
+cat file_name
+help`
+
 class VirtualFileSystem {
 
     constructor(startingDirectory) {
@@ -65,6 +72,9 @@ class VirtualFileSystem {
         }
         else if(input.command === "cat") {
             return this.cat(input);
+        }
+        else if(input.command === "help") {
+            return this.help(input);
         }
         else {
             return new ProcessResult(input, ResultCodes.NOT_FOUND, `command not found: ${input.command}`);
@@ -250,6 +260,9 @@ class VirtualFileSystem {
         catch(e) {
             return new ProcessResult(input, ResultCodes.ERROR, e.message);
         }
+    }
+    help(input) {
+        return new ProcessResult(input, ResultCodes.SUCCESS, helpText);
     }
 
     
